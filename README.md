@@ -25,16 +25,13 @@ A modern Library Management System built with **Flutter + Firebase** for managin
 
 ---
 
-## 📱 Screenshots
+## 📸 Screenshots
 
-### Login
-![Login](screenshots/signin.png)
-
-### User Dashboard
-![User](screenshots/user.png)
-
-### Admin Dashboard
-![Admin](screenshots/admin.png)
+<p align="center">
+  <img src="screenshots/signin.png" width="250"/>
+  <img src="screenshots/user.png" width="250"/>
+  <img src="screenshots/admin.png" width="250"/>
+</p>
 
 ---
 
