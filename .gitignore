@@ -1,0 +1,102 @@
+# ===============================
+# Flutter / Dart
+# ===============================
+
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+
+# ===============================
+# Android
+# ===============================
+
+android/.gradle/
+android/local.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
+**/android/**/gradle-wrapper.jar
+
+# Generated APK / AAB
+*.apk
+*.aab
+
+# ===============================
+# iOS
+# ===============================
+
+ios/Flutter/.last_build_id
+ios/Pods/
+ios/.symlinks/
+ios/Runner.xcworkspace/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+
+# ===============================
+# Web
+# ===============================
+
+build/web/
+
+# ===============================
+# macOS
+# ===============================
+
+macos/Pods/
+macos/.symlinks/
+macos/Flutter/ephemeral/
+
+# ===============================
+# Windows
+# ===============================
+
+windows/flutter/ephemeral/
+
+# ===============================
+# Linux
+# ===============================
+
+linux/flutter/ephemeral/
+
+# ===============================
+# IDEs
+# ===============================
+
+.idea/
+*.iml
+.vscode/
+*.ipr
+*.iws
+
+# ===============================
+# Logs / Temp
+# ===============================
+
+*.log
+*.tmp
+*.swp
+*.class
+.DS_Store
+
+# ===============================
+# Firebase / Secrets (IMPORTANT)
+# ===============================
+
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+.env
+
+# ===============================
+# Obfuscation / Symbols
+# ===============================
+
+app.*.symbols
+app.*.map.json
+functions/node_modules/
+node_modules/
