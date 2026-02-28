@@ -1,184 +1,74 @@
-📚 Library Management App
+# 📚 Library Management App
 
-A modern Library Management System built using Flutter & Firebase, designed to digitize book borrowing, reservations, wallet tracking, and admin management with a clean and responsive UI.
+A modern Library Management System built with **Flutter + Firebase** for managing books, users, borrowing, reservations, and wallet-based fines.
 
-🚀 Overview
+---
 
-This application replaces traditional manual library tracking systems with a scalable, cloud-powered digital solution.
+## 🚀 Features
 
-Key Capabilities
+### 👤 User
+- Email & Google Authentication
+- Digital Library ID (QR)
+- Browse & reserve books
+- Borrow & return books
+- Wallet balance tracking
+- Borrow history & fine management
 
-Role-based access (Admin & User)
+### 🛠 Admin
+- Add / Edit / Delete books
+- Manage users
+- QR-based user scanning
+- Borrow & return control
+- Overdue tracking
+- Analytics dashboard
+- Financial summary (Total Wallet Balance)
 
-Book management
+---
 
-Borrowing & reservation workflows
+## 📱 Screenshots
 
-Wallet-based fine handling
+### Login
+![Login](screenshots/signin.png)
 
-QR-based identification
+### User Dashboard
+![User](screenshots/user.png)
 
-Firebase Cloud Functions backend
+### Admin Dashboard
+![Admin](screenshots/admin.png)
 
-Cross-platform support (Android, iOS, Web, Desktop)
+---
 
-🔥 Core Features
-👤 User Panel
+## 🏗 Tech Stack
+- Flutter
+- Provider (State Management)
+- Firebase Authentication
+- Cloud Firestore
+- Firebase Cloud Functions
 
-Secure Email & Google Authentication
+---
 
-Digital Library ID (QR)
+## ⚙️ Setup
 
-Browse & discover books
-
-Reserve books
-
-Borrow & return books
-
-Wallet balance tracking
-
-Borrow history
-
-Fine management
-
-🛠 Admin Panel
-
-Add / Edit / Delete books
-
-Manage users
-
-QR-based user scanning
-
-Borrow & return control
-
-Overdue tracking
-
-Analytics dashboard
-
-Financial summary (Total Wallet Balance)
-
-📱 App Screenshots
-🔐 Login Screen
-
-👤 User Dashboard
-
-🛠 Admin Dashboard
-
-🏗 Tech Stack
-Frontend
-
-Flutter
-
-Provider (State Management)
-
-Backend
-
-Firebase Authentication
-
-Cloud Firestore
-
-Firebase Cloud Functions
-
-Security
-
-Firestore Security Rules
-
-Platforms
-
-Android
-
-iOS
-
-Web
-
-Windows
-
-macOS
-
-Linux
-
-📂 Project Structure
-lib/
- ├── models/
- ├── providers/
- ├── screens/
- ├── widgets/
- ├── theme/
- └── main.dart
-
-functions/
- ├── index.js
- ├── package.json
- └── package-lock.json
-
-firestore.rules
-⚙️ Installation
-1️⃣ Clone Repository
+```bash
 git clone https://github.com/vedant990-hub/library-management-app.git
 cd library-management-app
-2️⃣ Install Dependencies
 flutter pub get
-3️⃣ Setup Firebase
-
-Create a Firebase project
-
-Enable:
-
-Authentication
-
-Firestore
-
-Cloud Functions
-
-Add google-services.json to:
-
-android/app/
-
-Add GoogleService-Info.plist to:
-
-ios/Runner/
-4️⃣ Install Firebase Functions
-cd functions
-npm install
-cd ..
-5️⃣ Run App
 flutter run
-📦 Build Release APK
+
+Build release APK:
+
 flutter build apk --release
-
-Output:
-
-build/app/outputs/flutter-apk/app-release.apk
-☁️ Deploy Backend
-firebase deploy --only functions
-firebase deploy --only firestore:rules
-🔐 Security
-
-Role-based Firestore access control
-
-Firebase Authentication
-
-Cloud Functions for backend validation
-
-Wallet transaction handling logic
-
-📌 Future Improvements
-
-Push notifications
-
-Advanced analytics charts
-
-Payment gateway integration
-
-Multi-library support
-
-Role-based granular permissions
-
 👨‍💻 Author
 
 Vedant Pawar
-GitHub: https://github.com/vedant990-hub
+https://github.com/vedant990-hub
 
-📜 License
 
-This project is developed for educational and demonstration purposes.
+---
+
+Now run:
+
+```bash
+git add README.md
+git commit -m "Simplified README"
+git push
