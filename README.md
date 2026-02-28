@@ -6,7 +6,7 @@ A modern Library Management System built using Flutter & Firebase, designed to d
 
 This application replaces traditional manual library tracking systems with a scalable, cloud-powered digital solution.
 
-It supports:
+Key Capabilities
 
 Role-based access (Admin & User)
 
@@ -20,7 +20,7 @@ QR-based identification
 
 Firebase Cloud Functions backend
 
-Cross-platform support
+Cross-platform support (Android, iOS, Web, Desktop)
 
 🔥 Core Features
 👤 User Panel
@@ -57,6 +57,13 @@ Analytics dashboard
 
 Financial summary (Total Wallet Balance)
 
+📱 App Screenshots
+🔐 Login Screen
+
+👤 User Dashboard
+
+🛠 Admin Dashboard
+
 🏗 Tech Stack
 Frontend
 
@@ -89,13 +96,6 @@ Windows
 macOS
 
 Linux
-
-📱 App Screenshots
-🔐 Login Screen
-
-👤 User Dashboard
-
-🛠 Admin Dashboard
 
 📂 Project Structure
 lib/
