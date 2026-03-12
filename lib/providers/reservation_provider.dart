@@ -2,7 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import '../models/book.dart';
-import '../models/borrowing.dart'; // We use Borrowing model for reservations
+import '../models/borrowing.dart';
+import '../services/notification_service.dart';
 import 'auth_provider.dart';
 
 class ReservationProvider with ChangeNotifier {
@@ -82,6 +83,7 @@ class ReservationProvider with ChangeNotifier {
 
         if (!userDoc.exists) throw Exception('User not found');
         if (!bookDoc.exists) throw Exception('Book not found');
+        if (userDoc.data()?['isBlocked'] == true) throw Exception('Your account is blocked. You cannot borrow books.');
 
         final currentAvailableCopies = bookDoc.data()?['availableCopies'] as int? ?? 0;
         if (currentAvailableCopies <= 0) throw Exception('Book not available');
@@ -105,8 +107,8 @@ class ReservationProvider with ChangeNotifier {
         transaction.set(reservationRef, {
           'userId': user.uid,
           'bookId': book.id,
+          'bookTitle': book.title,
           'reservedAt': now,
-          // Give 24 hours to pick up the book
           'expiresAt': Timestamp.fromDate(DateTime.now().add(const Duration(hours: 24))),
           'borrowedAt': null,
           'dueAt': null,
@@ -116,12 +118,11 @@ class ReservationProvider with ChangeNotifier {
           'finePerDay': finePerDay,
           'status': 'reserved',
         });
-      });
 
+        _logActivity(transaction, user.name, 'reserved', book.title);
+      });
     } catch (e) {
-      if (kDebugMode) {
-        print('Error reserving book: $e');
-      }
+      if (kDebugMode) print('Error reserving book: $e');
       rethrow;
     } finally {
       _isLoading = false;
@@ -135,7 +136,8 @@ class ReservationProvider with ChangeNotifier {
 
     try {
       final reservationRef = _firestore.collection('reservations').doc(reservation.id);
-      
+      final dueAt = DateTime.now().add(const Duration(days: 7));
+
       await _firestore.runTransaction((transaction) async {
         final doc = await transaction.get(reservationRef);
         if (!doc.exists) throw Exception('Reservation not found');
@@ -147,15 +149,28 @@ class ReservationProvider with ChangeNotifier {
         transaction.update(reservationRef, {
           'status': 'borrowed',
           'borrowedAt': FieldValue.serverTimestamp(),
-          // Give 7 days to return from the moment they borrow
-          'dueAt': Timestamp.fromDate(DateTime.now().add(const Duration(days: 7))),
+          'dueAt': Timestamp.fromDate(dueAt),
         });
+
+        final user = _authProvider.currentUser;
+        _logActivity(transaction, user?.name ?? "User", 'borrowed', reservation.bookTitle);
       });
 
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error confirming borrow: $e');
+      // Schedule notification after transaction succeeds
+      try {
+        await NotificationService().scheduleDueReminder(
+          id: reservation.id.hashCode,
+          title: 'Return Reminder 📚',
+          body: 'Your book "${reservation.bookTitle}" is due tomorrow.',
+          scheduledDate: dueAt,
+        );
+      } catch (ne) {
+        if (kDebugMode) print('Warning: Failed to schedule notification: $ne');
+        // Do not rethrow; we want the borrow to remain confirmed in FS
       }
+
+    } catch (e) {
+      if (kDebugMode) print('Error confirming borrow: $e');
       rethrow;
     } finally {
       _isLoading = false;
@@ -187,29 +202,25 @@ class ReservationProvider with ChangeNotifier {
 
         final depositAmount = (reservationDoc.data()?['depositAmount'] as num).toDouble();
 
-        // 1. Fully return deposit
         transaction.update(walletRef, {
           'availableBalance': FieldValue.increment(depositAmount),
           'lockedDeposit': FieldValue.increment(-depositAmount),
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
-        // 2. Return book copy
         transaction.update(bookRef, {
           'availableCopies': FieldValue.increment(1),
         });
 
-        // 3. Mark reservation as returned (or cancelled ideally, but returned serves as the end state)
         transaction.update(reservationRef, {
           'status': 'returned',
           'returnedAt': FieldValue.serverTimestamp(),
         });
-      });
 
+        _logActivity(transaction, user.name, 'cancelled', reservation.bookTitle);
+      });
     } catch (e) {
-      if (kDebugMode) {
-        print('Error cancelling reservation: $e');
-      }
+      if (kDebugMode) print('Error cancelling reservation: $e');
       rethrow;
     } finally {
       _isLoading = false;
@@ -238,7 +249,6 @@ class ReservationProvider with ChangeNotifier {
         final reservationDoc = await transaction.get(reservationRef);
         if (!reservationDoc.exists) throw Exception('Reservation record not found');
         
-        // ── READ ALL BEFORE WRITING ──
         final userDoc = await transaction.get(userRef);
         
         final currentStatus = reservationDoc.data()?['status'];
@@ -278,7 +288,9 @@ class ReservationProvider with ChangeNotifier {
           'fineAmount': fine, 
         });
 
-        // ── Gamification: streak, badges ──
+        final userName = userDoc.data()?['name'] ?? "User";
+        _logActivity(transaction, userName, 'returned', reservation.bookTitle);
+
         final userData = userDoc.data() ?? {};
         final booksBorrowed = (userData['booksBorrowed'] as int? ?? 0) + 1;
         int readingStreak = userData['readingStreak'] as int? ?? 0;
@@ -293,16 +305,9 @@ class ReservationProvider with ChangeNotifier {
           readingStreak = 0;
         }
 
-        // Evaluate badges
-        if (booksBorrowed >= 5 && !badges.contains('Bookworm')) {
-          badges.add('Bookworm');
-        }
-        if (onTimeReturns >= 3 && !badges.contains('Early Bird')) {
-          badges.add('Early Bird');
-        }
-        if (readingStreak >= 5 && !badges.contains('Consistent Reader')) {
-          badges.add('Consistent Reader');
-        }
+        if (booksBorrowed >= 5 && !badges.contains('Bookworm')) badges.add('Bookworm');
+        if (onTimeReturns >= 3 && !badges.contains('Early Bird')) badges.add('Early Bird');
+        if (readingStreak >= 5 && !badges.contains('Consistent Reader')) badges.add('Consistent Reader');
 
         transaction.update(userRef, {
           'booksBorrowed': booksBorrowed,
@@ -312,10 +317,15 @@ class ReservationProvider with ChangeNotifier {
         });
       });
 
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error returning book: \$e');
+      // Cancel notification after transaction succeeds
+      try {
+        await NotificationService().cancelNotification(reservation.id.hashCode);
+      } catch (ne) {
+        if (kDebugMode) print('Warning: Failed to cancel notification: $ne');
       }
+
+    } catch (e) {
+      if (kDebugMode) print('Error returning book: $e');
       rethrow;
     } finally {
       _isLoading = false;
@@ -332,8 +342,16 @@ class ReservationProvider with ChangeNotifier {
 
   @override
   void notifyListeners() {
-    if (!_disposed) {
-      super.notifyListeners();
-    }
+    if (!_disposed) super.notifyListeners();
+  }
+
+  void _logActivity(Transaction transaction, String userName, String actionType, String bookTitle) {
+    final activityRef = _firestore.collection('activity_logs').doc();
+    transaction.set(activityRef, {
+      'userName': userName,
+      'actionType': actionType,
+      'bookTitle': bookTitle,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
   }
 }

@@ -119,8 +119,8 @@ class _PremiumBottomBar extends StatelessWidget {
         ],
       ),
       child: BottomAppBar(
-        color: Colors.white,
-        surfaceTintColor: Colors.white,
+        color: Theme.of(context).cardColor,
+        surfaceTintColor: Theme.of(context).cardColor,
         elevation: 0,
         notchMargin: 8,
         shape: const CircularNotchedRectangle(),
@@ -199,7 +199,7 @@ class _NavItem extends StatelessWidget {
                 size: 24,
                 color: isSelected
                     ? AppColors.primary
-                    : AppColors.textTertiary,
+                    : Theme.of(context).textTheme.bodySmall?.color?.withAlpha(150),
               ),
             ),
             const SizedBox(height: 4),
@@ -210,7 +210,7 @@ class _NavItem extends StatelessWidget {
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 color: isSelected
                     ? AppColors.primary
-                    : AppColors.textTertiary,
+                    : Theme.of(context).textTheme.bodySmall?.color?.withAlpha(150),
               ),
             ),
             const SizedBox(height: 2),

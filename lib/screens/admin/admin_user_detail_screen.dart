@@ -18,10 +18,13 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
   List<Borrowing> _borrowings = [];
   bool _historyLoading = true;
   String? _historyError;
+  bool _isBlocking = false;
+  late bool _isBlocked;
 
   @override
   void initState() {
     super.initState();
+    _isBlocked = widget.user.isBlocked;
     _loadHistory();
   }
 
@@ -56,6 +59,41 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
           _historyError = e.toString();
           _historyLoading = false;
         });
+      }
+    }
+  }
+
+  Future<void> _toggleBlockUser() async {
+    setState(() => _isBlocking = true);
+    try {
+      final newStatus = !_isBlocked;
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.user.uid)
+          .update({'isBlocked': newStatus});
+
+      setState(() {
+        _isBlocked = newStatus;
+        _isBlocking = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(newStatus ? 'User has been blocked' : 'User has been unblocked'),
+            backgroundColor: newStatus ? AppColors.error : AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _isBlocking = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update status: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
     }
   }
@@ -161,6 +199,35 @@ class _AdminUserDetailScreenState extends State<AdminUserDetailScreen> {
                   ],
                 ),
               ),
+              if (!user.isAdmin) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _isBlocking ? null : _toggleBlockUser,
+                    icon: _isBlocking
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : Icon(
+                            _isBlocked ? Icons.lock_open_rounded : Icons.block_rounded,
+                            size: 20,
+                          ),
+                    label: Text(
+                      _isBlocking
+                          ? 'Processing...'
+                          : (_isBlocked ? 'Unblock User' : 'Block User from Borrowing'),
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isBlocked ? AppColors.success : AppColors.error,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
 
               // Wallet

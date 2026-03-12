@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/admin_analytics_provider.dart';
 import '../../theme/app_theme.dart';
 import 'admin_book_list_screen.dart';
 import 'admin_dashboard_screen.dart';
@@ -23,11 +24,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     setState(() {
       _currentIndex = index;
     });
+    if (index == 0) {
+      Provider.of<AdminAnalyticsProvider>(context, listen: false).fetchAnalytics();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AppAuthProvider>(context);
+    final theme = Theme.of(context);
+    final isDark = false;
 
     return Scaffold(
       appBar: AppBar(
@@ -36,7 +42,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: AppColors.adminAccent.withAlpha(30),
+                color: AppColors.adminAccent.withAlpha(isDark ? 60 : 30),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(Icons.admin_panel_settings_rounded,
@@ -44,14 +50,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ),
             const SizedBox(width: 12),
             Text('Admin Panel',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 20)),
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.w700, 
+                  fontSize: 20,
+                  color: Colors.white,
+                )),
           ],
         ),
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 4),
             child: IconButton(
-              icon: const Icon(Icons.person_outline_rounded, size: 22),
+              icon: const Icon(Icons.person_outline_rounded, size: 22, color: Colors.white),
               onPressed: () {
                 Navigator.push(
                   context,
@@ -63,7 +73,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           Container(
             margin: const EdgeInsets.only(right: 8),
             child: IconButton(
-              icon: const Icon(Icons.logout_rounded, size: 22),
+              icon: const Icon(Icons.logout_rounded, size: 22, color: Colors.white),
               onPressed: () async {
                 final confirm = await showDialog<bool>(
                   context: context,
@@ -71,12 +81,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     title: Text('Logout',
                         style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
                     content: Text('Are you sure you want to logout?',
-                        style: GoogleFonts.poppins(color: AppColors.textSecondary)),
+                        style: GoogleFonts.poppins(color: theme.textTheme.bodyMedium?.color)),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(ctx, false),
                         child: Text('Cancel',
-                            style: TextStyle(color: AppColors.textSecondary)),
+                            style: TextStyle(color: theme.textTheme.bodySmall?.color)),
                       ),
                       ElevatedButton(
                         onPressed: () => Navigator.pop(ctx, true),
@@ -98,7 +108,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          const AdminDashboardScreen(),
+          AdminDashboardScreen(onNavigate: _onTabTapped),
           const AdminUserManagementScreen(),
           AdminScanUserScreen(isActive: _currentIndex == 2),
           const AdminBookListScreen(),

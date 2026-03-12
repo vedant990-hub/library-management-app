@@ -148,7 +148,7 @@ class _AdminScanUserScreenState extends State<AdminScanUserScreen> with WidgetsB
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -392,6 +392,11 @@ class _UserDetailSheetState extends State<_UserDetailSheet> {
 
         final walletDoc = await transaction.get(walletRef);
         final bookDoc = await transaction.get(bookRef);
+        final userDoc = await transaction.get(firestore.collection('users').doc(widget.userId));
+
+        if (userDoc.exists && userDoc.data()?['isBlocked'] == true) {
+          throw Exception('User is blocked. They cannot borrow books.');
+        }
 
         final balance =
             (walletDoc.data()?['availableBalance'] as num?)?.toDouble() ?? 0.0;
@@ -473,7 +478,7 @@ class _UserDetailSheetState extends State<_UserDetailSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: Theme.of(context).dividerColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -511,12 +516,12 @@ class _UserDetailSheetState extends State<_UserDetailSheet> {
                         style: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).textTheme.titleLarge?.color,
                         )),
                     Text(widget.userData['email'] ?? '',
                         style: GoogleFonts.poppins(
                           fontSize: 13,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).textTheme.bodySmall?.color,
                         )),
                   ],
                 ),
@@ -547,7 +552,7 @@ class _UserDetailSheetState extends State<_UserDetailSheet> {
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: Theme.of(context).textTheme.titleLarge?.color,
               )),
           const SizedBox(height: 12),
           // Book dropdown
@@ -601,7 +606,7 @@ class _UserDetailSheetState extends State<_UserDetailSheet> {
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).textTheme.titleLarge?.color,
                 )),
             const SizedBox(height: 12),
             ListView.separated(
@@ -620,9 +625,9 @@ class _UserDetailSheetState extends State<_UserDetailSheet> {
                 return Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
+                    color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(color: Theme.of(context).dividerColor),
                   ),
                   child: Row(
                     children: [

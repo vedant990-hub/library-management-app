@@ -11,11 +11,18 @@ import 'providers/wallet_provider.dart';
 import 'providers/reservation_provider.dart';
 import 'providers/admin_analytics_provider.dart';
 import 'providers/review_provider.dart';
+import 'providers/review_provider.dart';
+import 'providers/activity_provider.dart';
+import 'providers/leaderboard_provider.dart';
+import 'providers/recommendation_provider.dart';
+import 'providers/stats_provider.dart';
+import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await NotificationService().init();
   runApp(
     MultiProvider(
       providers: [
@@ -23,9 +30,19 @@ void main() async {
         ChangeNotifierProvider(create: (_) => LibraryProvider()),
         ChangeNotifierProvider(create: (_) => AdminAnalyticsProvider()),
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
+        ChangeNotifierProvider(create: (_) => ActivityProvider()),
+        ChangeNotifierProvider(create: (_) => LeaderboardProvider()),
+        ChangeNotifierProxyProvider2<AppAuthProvider, LibraryProvider, RecommendationProvider>(
+          create: (context) => RecommendationProvider(),
+          update: (context, auth, library, previous) => (previous ?? RecommendationProvider())..updateRecommendations(auth, library),
+        ),
         ChangeNotifierProxyProvider<AppAuthProvider, WalletProvider>(
           create: (context) => WalletProvider(Provider.of<AppAuthProvider>(context, listen: false)),
           update: (context, auth, previous) => previous!..update(auth),
+        ),
+        ChangeNotifierProxyProvider<AppAuthProvider, StatsProvider>(
+          create: (context) => StatsProvider(),
+          update: (context, auth, previous) => (previous ?? StatsProvider())..fetchStats(auth),
         ),
         ChangeNotifierProxyProvider<AppAuthProvider, ReservationProvider>(
           create: (context) => ReservationProvider(Provider.of<AppAuthProvider>(context, listen: false)),
@@ -42,13 +59,17 @@ class LibraryApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use userTheme as default. The admin screens handle their own styling 
-    // via the admin AppBar theme. This avoids rebuilding MaterialApp on auth changes.
-    return MaterialApp(
-      title: 'Public Library',
-      theme: AppTheme.userTheme,
-      home: const _AppEntry(),
-      debugShowCheckedModeBanner: false,
+    return Consumer<AppAuthProvider>(
+      builder: (context, authProvider, _) {
+        final isAdmin = authProvider.isAdmin;
+        return MaterialApp(
+          title: 'Public Library',
+          theme: isAdmin ? AppTheme.adminTheme : AppTheme.userTheme,
+          themeMode: ThemeMode.light,
+          home: const _AppEntry(),
+          debugShowCheckedModeBanner: false,
+        );
+      },
     );
   }
 }

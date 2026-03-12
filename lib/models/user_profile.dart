@@ -11,6 +11,7 @@ class UserProfile {
   final int readingStreak;
   final int onTimeReturns;
   final List<String> badges;
+  final bool isBlocked;
 
   UserProfile({
     required this.uid,
@@ -23,6 +24,7 @@ class UserProfile {
     this.readingStreak = 0,
     this.onTimeReturns = 0,
     this.badges = const [],
+    this.isBlocked = false,
   });
 
   factory UserProfile.fromMap(Map<String, dynamic> map, String documentId) {
@@ -40,6 +42,7 @@ class UserProfile {
               ?.map((e) => e.toString())
               .toList() ??
           [],
+      isBlocked: map['isBlocked'] as bool? ?? false,
     );
   }
 
@@ -55,6 +58,7 @@ class UserProfile {
       'readingStreak': readingStreak,
       'onTimeReturns': onTimeReturns,
       'badges': badges,
+      'isBlocked': isBlocked,
     };
   }
 
@@ -71,6 +75,7 @@ class UserProfile {
     int? readingStreak,
     int? onTimeReturns,
     List<String>? badges,
+    bool? isBlocked,
   }) {
     return UserProfile(
       uid: uid ?? this.uid,
@@ -83,6 +88,7 @@ class UserProfile {
       readingStreak: readingStreak ?? this.readingStreak,
       onTimeReturns: onTimeReturns ?? this.onTimeReturns,
       badges: badges ?? this.badges,
+      isBlocked: isBlocked ?? this.isBlocked,
     );
   }
 }

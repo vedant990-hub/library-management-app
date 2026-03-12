@@ -14,7 +14,7 @@ class AdminQrScreen extends StatelessWidget {
     final qrData = 'book_${book.id}';
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Book QR Code',
             style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
@@ -30,9 +30,9 @@ class AdminQrScreen extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.cardBorder),
+                  border: Border.all(color: Theme.of(context).dividerColor),
                 ),
                 child: Column(
                   children: [
@@ -40,11 +40,12 @@ class AdminQrScreen extends StatelessWidget {
                       width: 56,
                       height: 72,
                       decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
                         borderRadius: BorderRadius.circular(12),
+                        image: DecorationImage(
+                          image: NetworkImage(book.coverUrl),
+                          fit: BoxFit.cover,
+                        ),
                       ),
-                      child: const Icon(Icons.auto_stories_rounded,
-                          color: Colors.white, size: 28),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -73,9 +74,9 @@ class AdminQrScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(28),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.cardBorder),
+                  border: Border.all(color: Theme.of(context).dividerColor),
                   boxShadow: [
                     BoxShadow(
                       color: AppColors.primary.withAlpha(12),

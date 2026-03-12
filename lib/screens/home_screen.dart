@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/library_provider.dart';
 import '../providers/auth_provider.dart';
@@ -11,6 +13,13 @@ import 'wallet_screen.dart';
 import 'scan_book_screen.dart';
 import 'profile_screen.dart';
 import 'library_id_screen.dart';
+import 'reading_stats_screen.dart';
+import 'book_detail_screen.dart';
+import '../providers/activity_provider.dart';
+import '../providers/leaderboard_provider.dart';
+import '../providers/recommendation_provider.dart';
+import '../models/book.dart';
+import '../utils/image_utils.dart';
 
 class HomeScreen extends StatelessWidget {
   final Function(int) onNavigate;
@@ -29,13 +38,24 @@ class HomeScreen extends StatelessWidget {
     final libraryProvider = Provider.of<LibraryProvider>(context);
     final reservationProvider = Provider.of<ReservationProvider>(context);
     final authProvider = Provider.of<AppAuthProvider>(context);
+    final recommendationProvider = Provider.of<RecommendationProvider>(context);
+    final activityProvider = Provider.of<ActivityProvider>(context);
+    final leaderboardProvider = Provider.of<LeaderboardProvider>(context);
+    final theme = Theme.of(context);
     final user = authProvider.currentUser;
 
     final activeReservationsCount =
         reservationProvider.activeReservations.length;
 
+    // Trigger pre-caching 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final allUrls = libraryProvider.allBooks.map((b) => b.coverUrl).toList();
+      final recUrls = recommendationProvider.recommendedBooks.map((b) => b.coverUrl).toList();
+      ImageUtils.preCacheImages(context, [...allUrls, ...recUrls]);
+    });
+
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
@@ -62,7 +82,7 @@ class HomeScreen extends StatelessWidget {
                               '${_getGreeting()} 👋',
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
-                                color: AppColors.textSecondary,
+                                color: theme.textTheme.bodySmall?.color,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -74,7 +94,7 @@ class HomeScreen extends StatelessWidget {
                               style: GoogleFonts.poppins(
                                 fontSize: 24,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
+                                color: theme.textTheme.headlineSmall?.color,
                                 letterSpacing: -0.5,
                               ),
                             ),
@@ -202,7 +222,7 @@ class HomeScreen extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: theme.textTheme.titleLarge?.color,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -257,16 +277,16 @@ class HomeScreen extends StatelessWidget {
                         onTap: () => onNavigate(3),
                       ),
                       _QuickActionCard(
-                        title: 'Scan\nBook QR',
-                        icon: Icons.qr_code_scanner_rounded,
+                        title: 'Reading\nAnalytics',
+                        icon: Icons.analytics_rounded,
                         gradientColors: const [
-                          Color(0xFF8B5CF6),
-                          Color(0xFF7C3AED)
+                          Color(0xFF3B82F6),
+                          Color(0xFF2563EB)
                         ],
                         onTap: () {
                           Navigator.push(
                             context,
-                            FadeSlideRoute(page: const ScanBookScreen()),
+                            FadeSlideRoute(page: const ReadingStatsScreen()),
                           );
                         },
                       ),
@@ -274,13 +294,38 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 28),
 
+                  // Feature 1: Recommended For You
+                  if (recommendationProvider.recommendedBooks.isNotEmpty) ...[
+                    Text(
+                      'Recommended For You',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: theme.textTheme.titleLarge?.color,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: recommendationProvider.recommendedBooks.length,
+                        itemBuilder: (context, index) {
+                          final book = recommendationProvider.recommendedBooks[index];
+                          return _RecommendedBookCard(book: book);
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                  ],
+
                   // Recent Additions
                   Text(
                     'Recent Additions',
                     style: GoogleFonts.poppins(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: theme.textTheme.titleLarge?.color,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -299,11 +344,11 @@ class HomeScreen extends StatelessWidget {
                                   children: [
                                     Icon(Icons.auto_stories_outlined,
                                         size: 48,
-                                        color: Colors.grey.shade300),
+                                        color: theme.dividerColor),
                                     const SizedBox(height: 12),
                                     Text('No books available yet',
                                         style: TextStyle(
-                                            color: AppColors.textTertiary)),
+                                            color: theme.textTheme.bodySmall?.color)),
                                   ],
                                 ),
                               ),
@@ -316,12 +361,21 @@ class HomeScreen extends StatelessWidget {
                               itemBuilder: (context, index) {
                                 final book = libraryProvider.allBooks[index];
                                 return _RecentBookTile(
-                                  title: book.title,
-                                  author: book.author,
+                                  book: book,
                                   index: index,
                                 );
                               },
                             ),
+                  const SizedBox(height: 28),
+
+                  // Feature 4: Top Readers Leaderboard
+                  if (leaderboardProvider.topReaders.isNotEmpty) ...[
+                    _LeaderboardSection(readers: leaderboardProvider.topReaders),
+                    const SizedBox(height: 28),
+                  ],
+
+                  // Feature 3: Live Library Activity
+                  _ActivityFeedSection(activities: activityProvider.activities),
                   const SizedBox(height: 16),
                 ],
               ),
@@ -389,7 +443,7 @@ class _WalletSummaryCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: availableBalance + lockedDeposit),
+              tween: Tween(begin: 0, end: availableBalance),
               duration: const Duration(milliseconds: 800),
               curve: Curves.easeOutCubic,
               builder: (context, value, child) {
@@ -515,9 +569,9 @@ class _QuickActionCardState extends State<_QuickActionCard> {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.cardBorder),
+            border: Border.all(color: Theme.of(context).dividerColor),
             boxShadow: [
               BoxShadow(
                 color: widget.gradientColors[0].withAlpha(12),
@@ -563,15 +617,15 @@ class _QuickActionCardState extends State<_QuickActionCard> {
                     ),
                 ],
               ),
-              Text(
-                widget.title,
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
-                  color: AppColors.textPrimary,
-                  height: 1.3,
-                ),
-              ),
+                  Text(
+                    widget.title,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: Theme.of(context).textTheme.titleMedium?.color,
+                      height: 1.3,
+                    ),
+                  ),
             ],
           ),
         ),
@@ -582,79 +636,345 @@ class _QuickActionCardState extends State<_QuickActionCard> {
 
 // ─── Recent Book Tile ───
 class _RecentBookTile extends StatelessWidget {
-  final String title;
-  final String author;
+  final Book book;
   final int index;
 
   const _RecentBookTile({
-    required this.title,
-    required this.author,
+    required this.book,
     required this.index,
   });
 
   @override
   Widget build(BuildContext context) {
-    final colors = [
-      const Color(0xFFE0E7FF),
-      const Color(0xFFD1FAE5),
-      const Color(0xFFFEF3C7),
-    ];
-    final iconColors = [
-      const Color(0xFF6366F1),
-      const Color(0xFF10B981),
-      const Color(0xFFF59E0B),
-    ];
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.cardBorder),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 64,
-            decoration: BoxDecoration(
-              color: colors[index % 3],
+    final theme = Theme.of(context);
+    
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          FadeSlideRoute(page: BookDetailScreen(book: book)),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.dividerColor),
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
               borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(Icons.auto_stories_rounded,
-                color: iconColors[index % 3], size: 24),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              child: CachedNetworkImage(
+                imageUrl: book.coverUrl,
+                width: 48,
+                height: 64,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Shimmer.fromColors(
+                  baseColor: Colors.grey.shade200,
+                  highlightColor: Colors.grey.shade100,
+                  child: Container(color: Colors.white),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  author,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
+                errorWidget: (context, url, error) => Container(
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  child: Icon(Icons.local_library_rounded, size: 24, color: AppColors.primary.withAlpha(180)),
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    book.title,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: theme.textTheme.bodyLarge?.color,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    book.author,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: theme.textTheme.bodyMedium?.color?.withAlpha(180),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+// ─── Feature 1: Recommended Book Card ───
+class _RecommendedBookCard extends StatelessWidget {
+  final Book book;
+
+  const _RecommendedBookCard({required this.book});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          FadeSlideRoute(page: BookDetailScreen(book: book)),
+        );
+      },
+      child: Container(
+        width: 140,
+        margin: const EdgeInsets.only(right: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: CachedNetworkImage(
+                  imageUrl: book.coverUrl,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Shimmer.fromColors(
+                    baseColor: Colors.grey.shade200,
+                    highlightColor: Colors.grey.shade100,
+                    child: Container(color: Colors.white),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(Icons.local_library_rounded, size: 40, color: AppColors.primary.withAlpha(180)),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              book.title,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: theme.textTheme.bodyLarge?.color,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              book.genre.isNotEmpty ? book.genre : book.author,
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                color: theme.textTheme.bodySmall?.color,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Feature 4: Leaderboard Section ───
+class _LeaderboardSection extends StatelessWidget {
+  final List<dynamic> readers;
+
+  const _LeaderboardSection({required this.readers});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = false;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Top Readers This Month',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: theme.textTheme.titleLarge?.color,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: theme.dividerColor),
+          ),
+          child: Column(
+            children: readers.asMap().entries.map((entry) {
+              final index = entry.key;
+              final reader = entry.value;
+              final Color rankColor = index == 0 
+                  ? const Color(0xFFF59E0B) 
+                  : index == 1 
+                      ? const Color(0xFF94A3B8) 
+                      : index == 2 
+                          ? const Color(0xFFB45309) 
+                          : theme.textTheme.bodySmall?.color ?? Colors.grey;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: rankColor.withAlpha(isDark ? 50 : 20),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: rankColor.withAlpha(isDark ? 100 : 40), width: 1.5),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${index + 1}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: rankColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: theme.colorScheme.primary.withAlpha(30),
+                      child: Text(
+                        reader.name[0].toUpperCase(),
+                        style: TextStyle(fontSize: 12, color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        reader.name,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: theme.textTheme.bodyLarge?.color,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${reader.booksBorrowed} books',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: theme.textTheme.bodySmall?.color,
+                      ),
+                    ),
+                    if (index == 0) ...[
+                      const SizedBox(width: 4),
+                      const Icon(Icons.emoji_events_rounded, color: Color(0xFFF59E0B), size: 18),
+                    ],
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Feature 3: Activity Feed Section ───
+class _ActivityFeedSection extends StatelessWidget {
+  final List<dynamic> activities;
+
+  const _ActivityFeedSection({required this.activities});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Library Activity',
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: theme.textTheme.titleLarge?.color,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: activities.length,
+          itemBuilder: (context, index) {
+            final activity = activities[index];
+            IconData icon = Icons.info_outline;
+            Color color = Colors.grey;
+            
+            if (activity.actionType == 'borrowed') {
+              icon = Icons.menu_book_rounded;
+              color = AppColors.primary;
+            } else if (activity.actionType == 'returned') {
+              icon = Icons.check_circle_rounded;
+              color = AppColors.success;
+            } else if (activity.actionType == 'reserved') {
+              icon = Icons.bookmark_rounded;
+              color = AppColors.warning;
+            } else if (activity.actionType == 'cancelled') {
+              icon = Icons.cancel_rounded;
+              color = AppColors.error;
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withAlpha(20),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, size: 18, color: color),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        style: GoogleFonts.poppins(fontSize: 13, color: theme.textTheme.bodyMedium?.color),
+                        children: [
+                          TextSpan(text: activity.userName, style: const TextStyle(fontWeight: FontWeight.w700)),
+                          TextSpan(text: ' ${activity.actionType} '),
+                          TextSpan(text: activity.bookTitle, style: const TextStyle(fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -667,9 +987,9 @@ class _BookShimmer extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.cardBorder),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Row(
         children: [
@@ -677,7 +997,7 @@ class _BookShimmer extends StatelessWidget {
             width: 48,
             height: 64,
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
+              color: Theme.of(context).dividerColor,
               borderRadius: BorderRadius.circular(10),
             ),
           ),
@@ -690,7 +1010,7 @@ class _BookShimmer extends StatelessWidget {
                   height: 14,
                   width: 140,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
+                    color: Theme.of(context).dividerColor,
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),
@@ -699,7 +1019,7 @@ class _BookShimmer extends StatelessWidget {
                   height: 12,
                   width: 100,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
+                    color: Theme.of(context).dividerColor,
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),

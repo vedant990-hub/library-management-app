@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 import '../utils/page_transitions.dart';
 import 'wallet_screen.dart';
 import 'library_id_screen.dart';
+import 'reading_stats_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -14,6 +15,8 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AppAuthProvider>(context);
     final user = authProvider.currentUser;
+    final theme = Theme.of(context);
+    final isDark = false; // Always false now
 
     if (user == null) {
       return const Scaffold(
@@ -22,7 +25,7 @@ class ProfileScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('My Profile', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
       ),
@@ -37,9 +40,9 @@ class ProfileScreen extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: theme.cardColor,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.cardBorder),
+                  border: Border.all(color: theme.dividerColor),
                 ),
                 child: Column(
                   children: [
@@ -67,7 +70,7 @@ class ProfileScreen extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: theme.textTheme.titleLarge?.color,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -75,14 +78,16 @@ class ProfileScreen extends StatelessWidget {
                       user.email,
                       style: GoogleFonts.poppins(
                         fontSize: 14,
-                        color: AppColors.textSecondary,
+                        color: theme.textTheme.bodySmall?.color,
                       ),
                     ),
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       decoration: BoxDecoration(
-                        color: user.isAdmin ? const Color(0xFFFEF3C7) : AppColors.primaryLight,
+                        color: user.isAdmin 
+                            ? (theme.brightness == Brightness.light ? const Color(0xFFFEF3C7) : Colors.amber.withAlpha(40)) 
+                            : (theme.brightness == Brightness.light ? AppColors.primaryLight : AppColors.primary.withAlpha(40)),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -90,7 +95,7 @@ class ProfileScreen extends StatelessWidget {
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: user.isAdmin ? const Color(0xFFB45309) : AppColors.primary,
+                          color: user.isAdmin ? (theme.brightness == Brightness.light ? const Color(0xFFB45309) : Colors.amber) : AppColors.primary,
                         ),
                       ),
                     ),
@@ -99,7 +104,9 @@ class ProfileScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
+                          color: theme.brightness == Brightness.light 
+                              ? AppColors.surface 
+                              : Colors.white.withAlpha(10),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Column(
@@ -113,7 +120,7 @@ class ProfileScreen extends StatelessWidget {
                                   icon: Icons.menu_book_rounded,
                                   color: AppColors.primary,
                                 ),
-                                Container(width: 1, height: 40, color: Colors.grey.shade300),
+                                Container(width: 1, height: 40, color: theme.dividerColor),
                                 _StatColumn(
                                   label: 'Reading Streak',
                                   value: '${user.readingStreak} Days',
@@ -126,7 +133,7 @@ class ProfileScreen extends StatelessWidget {
                               const Divider(height: 32),
                               Text('Unlocked Badges',
                                   style: GoogleFonts.poppins(
-                                      fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                                      fontSize: 12, fontWeight: FontWeight.w600, color: theme.textTheme.bodyMedium?.color)),
                               const SizedBox(height: 12),
                               Wrap(
                                 spacing: 8,
@@ -184,8 +191,8 @@ class ProfileScreen extends StatelessWidget {
               if (!user.isAdmin) ...[
                 _ProfileMenuItem(
                   icon: Icons.qr_code_2_rounded,
-                  iconBgColor: const Color(0xFFE0E7FF),
-                  iconColor: const Color(0xFF4F46E5),
+                  iconBgColor: theme.brightness == Brightness.light ? const Color(0xFFE0E7FF) : const Color(0xFF312E81),
+                  iconColor: theme.brightness == Brightness.light ? const Color(0xFF4F46E5) : const Color(0xFF818CF8),
                   title: 'My Library ID',
                   subtitle: 'Show QR code to librarian to borrow',
                   onTap: () {
@@ -195,14 +202,15 @@ class ProfileScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 _ProfileMenuItem(
                   icon: Icons.account_balance_wallet_rounded,
-                  iconBgColor: const Color(0xFFD1FAE5),
-                  iconColor: const Color(0xFF059669),
+                  iconBgColor: theme.brightness == Brightness.light ? const Color(0xFFD1FAE5) : const Color(0xFF064E3B),
+                  iconColor: theme.brightness == Brightness.light ? const Color(0xFF059669) : const Color(0xFF34D399),
                   title: 'My Wallet',
                   subtitle: 'View balances, deposits & fines',
                   onTap: () {
                     Navigator.push(context, FadeSlideRoute(page: const WalletScreen()));
                   },
                 ),
+                const SizedBox(height: 12),
                 const SizedBox(height: 12),
               ],
 
@@ -215,6 +223,20 @@ class ProfileScreen extends StatelessWidget {
                 onTap: () {},
               ),
 
+               _ProfileMenuItem(
+                icon: Icons.analytics_rounded,
+                iconBgColor: Colors.blue.withAlpha(isDark ? 50 : 20),
+                iconColor: Colors.blue,
+                title: 'Reading Stats',
+                subtitle: 'View your reading progress & charts',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    FadeSlideRoute(page: ReadingStatsScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
               const SizedBox(height: 32),
 
               // Logout
@@ -227,11 +249,11 @@ class ProfileScreen extends StatelessWidget {
                       builder: (context) => AlertDialog(
                         title: Text('Logout', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
                         content: Text('Are you sure you want to logout?',
-                            style: GoogleFonts.poppins(color: AppColors.textSecondary)),
+                            style: GoogleFonts.poppins(color: theme.textTheme.bodyMedium?.color)),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context, false),
-                            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+                            child: Text('Cancel', style: TextStyle(color: theme.textTheme.bodySmall?.color)),
                           ),
                           ElevatedButton(
                             onPressed: () => Navigator.pop(context, true),
@@ -287,8 +309,8 @@ class _StatColumn extends StatelessWidget {
       children: [
         Icon(icon, color: color, size: 24),
         const SizedBox(height: 8),
-        Text(value, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-        Text(label, style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textSecondary)),
+        Text(value, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: Theme.of(context).textTheme.titleLarge?.color)),
+        Text(label, style: GoogleFonts.poppins(fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color)),
       ],
     );
   }
@@ -301,6 +323,7 @@ class _ProfileMenuItem extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final Widget? trailing;
 
   const _ProfileMenuItem({
     required this.icon,
@@ -309,6 +332,7 @@ class _ProfileMenuItem extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.trailing,
   });
 
   @override
@@ -319,9 +343,9 @@ class _ProfileMenuItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.cardBorder),
+          border: Border.all(color: Theme.of(context).dividerColor),
         ),
         child: Row(
           children: [
@@ -343,21 +367,21 @@ class _ProfileMenuItem extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).textTheme.titleMedium?.color,
                     ),
                   ),
                   Text(
                     subtitle,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: AppColors.textTertiary,
+                      color: Theme.of(context).textTheme.bodySmall?.color,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded,
-                size: 16, color: AppColors.textTertiary),
+            trailing ?? Icon(Icons.arrow_forward_ios_rounded,
+                size: 16, color: Theme.of(context).textTheme.bodySmall?.color),
           ],
         ),
       ),

@@ -4,6 +4,7 @@ class Borrowing {
   final String id;
   final String userId;
   final String bookId;
+  final String bookTitle;
   final DateTime reservedAt;
   final DateTime expiresAt;    // Time allowed to pick up the book
   final DateTime? borrowedAt;  // When the user actually took the book
@@ -18,6 +19,7 @@ class Borrowing {
     required this.id,
     required this.userId,
     required this.bookId,
+    required this.bookTitle,
     required this.reservedAt,
     required this.expiresAt,
     this.borrowedAt,
@@ -34,6 +36,7 @@ class Borrowing {
       id: documentId,
       userId: map['userId'] ?? '',
       bookId: map['bookId'] ?? '',
+      bookTitle: map['bookTitle'] ?? '',
       reservedAt: (map['reservedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       expiresAt: (map['expiresAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       borrowedAt: (map['borrowedAt'] as Timestamp?)?.toDate(),
@@ -50,6 +53,7 @@ class Borrowing {
     return {
       'userId': userId,
       'bookId': bookId,
+      'bookTitle': bookTitle,
       'reservedAt': Timestamp.fromDate(reservedAt),
       'expiresAt': Timestamp.fromDate(expiresAt),
       'borrowedAt': borrowedAt != null ? Timestamp.fromDate(borrowedAt!) : null,
@@ -66,6 +70,7 @@ class Borrowing {
     String? id,
     String? userId,
     String? bookId,
+    String? bookTitle,
     DateTime? reservedAt,
     DateTime? expiresAt,
     DateTime? borrowedAt,
@@ -80,6 +85,7 @@ class Borrowing {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       bookId: bookId ?? this.bookId,
+      bookTitle: bookTitle ?? this.bookTitle,
       reservedAt: reservedAt ?? this.reservedAt,
       expiresAt: expiresAt ?? this.expiresAt,
       borrowedAt: borrowedAt ?? this.borrowedAt,

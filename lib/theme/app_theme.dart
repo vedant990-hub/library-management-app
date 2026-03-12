@@ -13,8 +13,11 @@ class AppColors {
 
   // Surface
   static const Color surface = Color(0xFFF8F9FC);
+  static const Color surfaceDark = Color(0xFF0F172A);
   static const Color card = Colors.white;
+  static const Color cardDark = Color(0xFF1E293B);
   static const Color cardBorder = Color(0xFFEEF0F5);
+  static const Color cardBorderDark = Color(0xFF334155);
 
   // Text
   static const Color textPrimary = Color(0xFF1A1D26);
@@ -66,18 +69,30 @@ class AppTheme {
     return GoogleFonts.poppinsTextTheme(base);
   }
 
-  static ThemeData get userTheme {
+  static final ThemeData userTheme = _buildUserTheme();
+  static final ThemeData adminTheme = _buildAdminTheme();
+
+  static ThemeData _buildUserTheme() {
     final base = ThemeData(
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
         surface: AppColors.surface,
+        brightness: Brightness.light,
       ),
       useMaterial3: true,
+      brightness: Brightness.light,
     );
 
     return base.copyWith(
-      textTheme: _buildTextTheme(base.textTheme),
+      textTheme: _buildTextTheme(base.textTheme).copyWith(
+        titleLarge: GoogleFonts.poppins(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+        bodyLarge: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16),
+        bodyMedium: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 14),
+        bodySmall: GoogleFonts.poppins(color: AppColors.textTertiary, fontSize: 12),
+      ),
       scaffoldBackgroundColor: AppColors.surface,
+      dividerColor: AppColors.cardBorder,
+      cardColor: AppColors.card,
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
@@ -109,20 +124,6 @@ class AppTheme {
           ),
           textStyle: GoogleFonts.poppins(
             fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.cardBorder, width: 1.5),
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          textStyle: GoogleFonts.poppins(
-            fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -161,35 +162,26 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         indicatorColor: AppColors.primaryLight,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
-            );
-          }
+          final color = states.contains(WidgetState.selected)
+              ? AppColors.primary
+              : AppColors.textTertiary;
           return GoogleFonts.poppins(
             fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textTertiary,
+            fontWeight: states.contains(WidgetState.selected) ? FontWeight.w600 : FontWeight.w500,
+            color: color,
           );
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: AppColors.primary, size: 24);
-          }
-          return const IconThemeData(color: AppColors.textTertiary, size: 24);
+          return IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? AppColors.primary
+                : AppColors.textTertiary,
+            size: 24,
+          );
         }),
       ),
-      snackBarTheme: SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        backgroundColor: AppColors.textPrimary,
-      ),
-      dialogTheme: DialogThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      ),
       bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
@@ -197,18 +189,27 @@ class AppTheme {
     );
   }
 
-  static ThemeData get adminTheme {
+  static ThemeData _buildAdminTheme() {
     final base = ThemeData(
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.adminPrimary,
         surface: AppColors.surface,
+        brightness: Brightness.light,
       ),
       useMaterial3: true,
+      brightness: Brightness.light,
     );
 
     return base.copyWith(
-      textTheme: _buildTextTheme(base.textTheme),
+      textTheme: _buildTextTheme(base.textTheme).copyWith(
+        titleLarge: GoogleFonts.poppins(color: AppColors.textPrimary, fontWeight: FontWeight.w700),
+        bodyLarge: GoogleFonts.poppins(color: AppColors.textPrimary, fontSize: 16),
+        bodyMedium: GoogleFonts.poppins(color: AppColors.textSecondary, fontSize: 14),
+        bodySmall: GoogleFonts.poppins(color: AppColors.textTertiary, fontSize: 12),
+      ),
       scaffoldBackgroundColor: AppColors.surface,
+      dividerColor: AppColors.cardBorder,
+      cardColor: AppColors.card,
       appBarTheme: AppBarTheme(
         backgroundColor: const Color(0xFF1E293B),
         surfaceTintColor: Colors.transparent,
@@ -273,32 +274,29 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         indicatorColor: AppColors.adminAccent.withAlpha(40),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            );
-          }
+          final color = states.contains(WidgetState.selected)
+              ? Colors.white
+              : Colors.white70;
           return GoogleFonts.poppins(
             fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: Colors.white70,
+            fontWeight: states.contains(WidgetState.selected) ? FontWeight.w600 : FontWeight.w500,
+            color: color,
           );
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: Colors.white, size: 24);
-          }
-          return const IconThemeData(color: Colors.white70, size: 24);
+          return IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? Colors.white
+                : Colors.white70,
+            size: 24,
+          );
         }),
       ),
-      snackBarTheme: SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      dialogTheme: DialogThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
       ),
     );
   }

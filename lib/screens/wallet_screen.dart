@@ -28,7 +28,7 @@ class WalletScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('My Wallet', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
       ),
@@ -79,7 +79,7 @@ class WalletScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Total Balance',
+                            'Available Balance',
                             style: GoogleFonts.poppins(
                               color: Colors.white70,
                               fontSize: 14,
@@ -102,7 +102,7 @@ class WalletScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        '₹${totalBalance.toStringAsFixed(2)}',
+                        '₹${availableBalance.toStringAsFixed(2)}',
                         style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontSize: 28,
@@ -212,7 +212,7 @@ class WalletScreen extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                    color: Theme.of(context).textTheme.titleLarge?.color,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -276,7 +276,7 @@ class WalletScreen extends StatelessWidget {
                                             style: GoogleFonts.poppins(
                                               fontWeight: FontWeight.w600,
                                               fontSize: 14,
-                                              color: AppColors.textPrimary,
+                                              color: Theme.of(context).textTheme.titleLarge?.color,
                                             ),
                                           ),
                                           const SizedBox(height: 2),
@@ -284,7 +284,7 @@ class WalletScreen extends StatelessWidget {
                                             'Deposit: ₹${borrowing.depositAmount.toStringAsFixed(0)}',
                                             style: GoogleFonts.poppins(
                                               fontSize: 12,
-                                              color: AppColors.textTertiary,
+                                              color: Theme.of(context).textTheme.bodySmall?.color,
                                             ),
                                           ),
                                         ],
@@ -336,7 +336,7 @@ class WalletScreen extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -353,7 +353,7 @@ class WalletScreen extends StatelessWidget {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: Theme.of(context).dividerColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -364,7 +364,7 @@ class WalletScreen extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: Theme.of(context).textTheme.titleLarge?.color,
                 ),
               ),
               const SizedBox(height: 20),
@@ -400,7 +400,7 @@ class WalletScreen extends StatelessWidget {
                       fontSize: 18, fontWeight: FontWeight.w600),
                   helperText: 'Max wallet balance: ₹${WalletProvider.maxBalance.toStringAsFixed(0)}',
                   helperStyle: GoogleFonts.poppins(
-                    fontSize: 11, color: AppColors.textTertiary),
+                    fontSize: 11, color: Theme.of(context).textTheme.bodySmall?.color),
                 ),
               ),
               const SizedBox(height: 24),
@@ -525,11 +525,11 @@ class _EmptyState extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 32),
         child: Column(
           children: [
-            Icon(icon, size: 48, color: Colors.grey.shade300),
+            Icon(icon, size: 48, color: Theme.of(context).dividerColor),
             const SizedBox(height: 12),
             Text(
               message,
-              style: GoogleFonts.poppins(color: AppColors.textTertiary),
+              style: GoogleFonts.poppins(color: Theme.of(context).textTheme.bodySmall?.color),
             ),
           ],
         ),

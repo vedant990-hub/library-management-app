@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 import '../models/book.dart';
 import '../providers/library_provider.dart';
 import '../providers/reservation_provider.dart';
@@ -58,6 +60,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     final reservationProvider = Provider.of<ReservationProvider>(context, listen: false);
     final authProvider = Provider.of<AppAuthProvider>(context);
     final reviewProvider = Provider.of<ReviewProvider>(context);
+    final theme = Theme.of(context);
 
     final currentBook = libraryProvider.allBooks.firstWhere(
       (b) => b.id == widget.book.id,
@@ -68,7 +71,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     final iconColor = _getBookIconColor();
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('Book Details', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
         centerTitle: true,
@@ -79,34 +82,52 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           children: [
             // Book cover area
             Container(
-              height: 260,
+              height: 280,
               decoration: BoxDecoration(
-                color: gradient[0],
-                border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
+                color: theme.brightness == Brightness.light ? gradient[0] : Colors.black26,
+                border: Border(bottom: BorderSide(color: theme.dividerColor)),
               ),
-              child: Center(
-                child: Container(
-                  width: 140,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: gradient,
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: gradient[1].withAlpha(80),
-                        blurRadius: 24,
-                        offset: const Offset(0, 12),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Blurred background cover
+                  Positioned.fill(
+                    child: Opacity(
+                      opacity: 0.15,
+                      child: CachedNetworkImage(
+                        imageUrl: currentBook.coverUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(color: Colors.black12),
+                        errorWidget: (context, url, error) => Container(
+                          color: const Color(0xFFF1F5F9),
+                        ),
                       ),
-                    ],
+                    ),
                   ),
-                  child: Center(
-                    child: Icon(Icons.auto_stories_rounded, size: 56, color: iconColor),
+                  // Main cover
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: CachedNetworkImage(
+                      imageUrl: currentBook.coverUrl,
+                      width: 160,
+                      height: 230,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Shimmer.fromColors(
+                        baseColor: Colors.grey.shade200,
+                        highlightColor: Colors.grey.shade100,
+                        child: Container(color: Colors.white),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Icon(Icons.local_library_rounded, size: 64, color: AppColors.primary.withAlpha(180)),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
 
@@ -126,18 +147,18 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                               currentBook.title,
                               style: GoogleFonts.poppins(
                                 fontWeight: FontWeight.w700,
-                                fontSize: 22,
+                                fontSize: 24,
                                 height: 1.2,
-                                color: AppColors.textPrimary,
+                                color: theme.textTheme.titleLarge?.color,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               currentBook.author,
                               style: GoogleFonts.poppins(
-                                color: AppColors.textSecondary,
+                                color: theme.textTheme.bodyMedium?.color?.withAlpha(180),
                                 fontWeight: FontWeight.w500,
-                                fontSize: 15,
+                                fontSize: 16,
                               ),
                             ),
                             if (currentBook.avgRating > 0) ...[
@@ -146,21 +167,21 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                                 children: [
                                   const Icon(Icons.star_rounded, size: 16, color: Colors.orange),
                                   const SizedBox(width: 4),
-                                  Text(
-                                    '${currentBook.avgRating}',
-                                    style: GoogleFonts.poppins(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                      color: AppColors.textPrimary,
+                                    Text(
+                                      '${currentBook.avgRating}',
+                                      style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                        color: theme.textTheme.bodyLarge?.color,
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    ' (${currentBook.totalReviews} reviews)',
-                                    style: GoogleFonts.poppins(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 13,
+                                    Text(
+                                      ' (${currentBook.totalReviews} reviews)',
+                                      style: GoogleFonts.poppins(
+                                        color: theme.textTheme.bodySmall?.color,
+                                        fontSize: 13,
+                                      ),
                                     ),
-                                  ),
                                 ],
                               ),
                             ],
@@ -215,19 +236,21 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                   Text(
                     'Description',
                     style: GoogleFonts.poppins(
-                      fontSize: 16,
+                      fontSize: 17,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: theme.textTheme.titleLarge?.color,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Dive into the world of ${currentBook.title} written by the brilliant ${currentBook.author}. '
-                    'This classic piece of literature explores profound themes and offers a compelling narrative that has captivated readers for generations. '
-                    'Reserve your copy today to experience this timeless masterpiece.',
+                    currentBook.description.isNotEmpty
+                        ? currentBook.description
+                        : 'Dive into the world of ${currentBook.title} written by the brilliant ${currentBook.author}. '
+                            'This classic piece of literature explores profound themes and offers a compelling narrative that has captivated readers for generations. '
+                            'Reserve your copy today to experience this timeless masterpiece.',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: AppColors.textSecondary,
+                      color: theme.textTheme.bodyMedium?.color?.withAlpha(200),
                       height: 1.7,
                     ),
                   ),
@@ -269,7 +292,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
+                          color: theme.textTheme.titleLarge?.color,
                         ),
                       ),
                       if (authProvider.currentUser != null && !authProvider.currentUser!.isAdmin)
@@ -287,14 +310,14 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
+                        color: theme.brightness == Brightness.light ? Colors.grey.shade50 : Colors.white.withAlpha(5),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
+                        border: Border.all(color: theme.dividerColor),
                       ),
                       child: Center(
                         child: Text(
                           'No reviews yet. Be the first to review!',
-                          style: GoogleFonts.poppins(color: AppColors.textSecondary),
+                          style: GoogleFonts.poppins(color: theme.textTheme.bodySmall?.color),
                         ),
                       ),
                     )
@@ -341,7 +364,11 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                             const SizedBox(height: 8),
                             Text(
                               review.comment,
-                              style: GoogleFonts.poppins(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+                              style: GoogleFonts.poppins(
+                                fontSize: 13, 
+                                color: theme.textTheme.bodyMedium?.color?.withAlpha(200), 
+                                height: 1.5
+                              ),
                             ),
                           ],
                         );
@@ -358,8 +385,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         child: Container(
           padding: const EdgeInsets.all(20.0),
           decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border(top: BorderSide(color: AppColors.cardBorder)),
+            color: theme.cardColor,
+            border: Border(top: BorderSide(color: theme.dividerColor)),
           ),
           child: ElevatedButton(
             onPressed: isAvailable
@@ -434,8 +461,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       ),
     );
   }
-
   void _showReviewSheet(BuildContext context, String userId, String userName) {
+    final theme = Theme.of(context);
     int rating = 5;
     final commentController = TextEditingController();
     bool isSubmitting = false;
@@ -443,7 +470,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) {
         return StatefulBuilder(

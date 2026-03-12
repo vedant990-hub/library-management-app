@@ -31,6 +31,15 @@ class AdminUserManagementScreen extends StatelessWidget {
                       style: GoogleFonts.poppins(
                           fontWeight: FontWeight.w600,
                           color: AppColors.textSecondary)),
+                  if (snapshot.error != null)
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        snapshot.error.toString(),
+                        style: GoogleFonts.poppins(fontSize: 10, color: AppColors.error),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                 ],
               ),
             );
@@ -128,6 +137,25 @@ class AdminUserManagementScreen extends StatelessWidget {
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFFB45309),
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (user.isBlocked) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.errorLight,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'Blocked',
+                            style: GoogleFonts.poppins(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.error,
                             ),
                           ),
                         ),

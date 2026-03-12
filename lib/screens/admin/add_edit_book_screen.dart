@@ -19,6 +19,7 @@ class _AddEditBookScreenState extends State<AddEditBookScreen> {
   final _titleController = TextEditingController();
   final _authorController = TextEditingController();
   final _copiesController = TextEditingController();
+  final _descriptionController = TextEditingController();
   bool _isLoading = false;
 
   @override
@@ -28,6 +29,7 @@ class _AddEditBookScreenState extends State<AddEditBookScreen> {
       _titleController.text = widget.book!.title;
       _authorController.text = widget.book!.author;
       _copiesController.text = widget.book!.availableCopies.toString();
+      _descriptionController.text = widget.book!.description;
     }
   }
 
@@ -36,6 +38,7 @@ class _AddEditBookScreenState extends State<AddEditBookScreen> {
     _titleController.dispose();
     _authorController.dispose();
     _copiesController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -54,12 +57,14 @@ class _AddEditBookScreenState extends State<AddEditBookScreen> {
           title: _titleController.text.trim(),
           author: _authorController.text.trim(),
           availableCopies: copies,
+          description: _descriptionController.text.trim(),
         );
         await provider.addBook(newBook);
       } else {
         final updatedBook = widget.book!.copyWith(
           title: _titleController.text.trim(),
           author: _authorController.text.trim(),
+          description: _descriptionController.text.trim(),
           availableCopies: copies,
         );
         await provider.updateBook(updatedBook);
@@ -196,6 +201,20 @@ class _AddEditBookScreenState extends State<AddEditBookScreen> {
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 18),
+                    TextFormField(
+                      controller: _descriptionController,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        labelText: 'Description',
+                        prefixIcon: Icon(Icons.description_rounded),
+                        alignLabelWithHint: true,
+                      ),
+                      validator: (value) =>
+                          value == null || value.trim().isEmpty
+                              ? 'Please enter a description'
+                              : null,
                     ),
                     const SizedBox(height: 36),
                     ElevatedButton.icon(

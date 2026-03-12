@@ -30,10 +30,10 @@ class _AdminBookListScreenState extends State<AdminBookListScreen> {
     final books = libraryProvider.allBooks;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: libraryProvider.isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.adminAccent))
+          ? Center(
+              child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary))
           : RefreshIndicator(
               onRefresh: () async {
                 await libraryProvider.fetchBooks();
@@ -189,9 +189,9 @@ class _AdminBookCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.cardBorder),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,16 +202,11 @@ class _AdminBookCard extends StatelessWidget {
                 width: 52,
                 height: 70,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: colors,
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
                   borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Center(
-                  child: Icon(Icons.auto_stories_rounded,
-                      size: 22, color: Colors.white70),
+                  image: DecorationImage(
+                    image: NetworkImage(book.coverUrl),
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
               const SizedBox(width: 14),

@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../../providers/admin_analytics_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/page_transitions.dart';
+import 'loans/admin_loans_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
-  const AdminDashboardScreen({super.key});
+  final Function(int)? onNavigate;
+
+  const AdminDashboardScreen({super.key, this.onNavigate});
 
   @override
   State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
@@ -116,24 +121,32 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   value: analytics.totalUsers,
                   icon: Icons.people_rounded,
                   gradientColors: const [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                  onTap: () => widget.onNavigate?.call(1), // Users Tab
                 ),
                 _StatCard(
                   title: 'Total Books',
                   value: analytics.totalBooks,
                   icon: Icons.library_books_rounded,
                   gradientColors: const [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+                  onTap: () => widget.onNavigate?.call(3), // Books Tab
                 ),
                 _StatCard(
                   title: 'Active Loans',
                   value: analytics.activeBorrowings,
                   icon: Icons.menu_book_rounded,
                   gradientColors: const [Color(0xFF14B8A6), Color(0xFF0D9488)],
+                  onTap: () {
+                    Navigator.push(context, FadeSlideRoute(page: const AdminLoansScreen(statusFilter: 'borrowed')));
+                  },
                 ),
                 _StatCard(
                   title: 'Overdue',
                   value: analytics.overdueBorrowings,
                   icon: Icons.warning_rounded,
                   gradientColors: const [Color(0xFFF59E0B), Color(0xFFD97706)],
+                  onTap: () {
+                    Navigator.push(context, FadeSlideRoute(page: const AdminLoansScreen(statusFilter: 'overdue')));
+                  },
                 ),
               ],
             ),
@@ -174,9 +187,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
             const SizedBox(height: 28),
 
-            // Simple bar visualization
+            // Monthly Library Activity Section
             Text(
-              'Borrowing Status',
+              'Monthly Library Activity',
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
@@ -184,34 +197,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.cardBorder),
-              ),
-              child: Column(
-                children: [
-                  _BarItem(
-                    label: 'Active Borrowings',
-                    value: analytics.activeBorrowings,
-                    maxValue: (analytics.activeBorrowings + analytics.overdueBorrowings)
-                        .clamp(1, double.maxFinite.toInt()),
-                    color: AppColors.success,
-                  ),
-                  const SizedBox(height: 16),
-                  _BarItem(
-                    label: 'Overdue',
-                    value: analytics.overdueBorrowings,
-                    maxValue: (analytics.activeBorrowings + analytics.overdueBorrowings)
-                        .clamp(1, double.maxFinite.toInt()),
-                    color: AppColors.error,
-                  ),
-                ],
-              ),
-            ),
+            _buildBorrowingBarChart(analytics),
             const SizedBox(height: 20),
+            _buildUsersBarChart(analytics),
+            const SizedBox(height: 20),
+            _buildFinesBarChart(analytics),
+            const SizedBox(height: 28),
 
             // Reset All Data button
             OutlinedButton.icon(
@@ -234,6 +225,370 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
+
+  Widget _buildBorrowingBarChart(AdminAnalyticsProvider analytics) {
+    if (analytics.monthlyBorrowings.isEmpty || analytics.monthlyBorrowings.values.every((v) => v == 0)) {
+      return _buildEmptyState('Books Borrowed Per Month');
+    }
+
+    final keys = analytics.monthlyBorrowings.keys.toList();
+    final values = analytics.monthlyBorrowings.values.toList();
+    final maxY = values.reduce((a, b) => a > b ? a : b).toDouble() * 1.2;
+
+    return _buildChartCard(
+      title: 'Books Borrowed Per Month',
+      child: BarChart(
+        BarChartData(
+          alignment: BarChartAlignment.spaceAround,
+          maxY: maxY == 0 ? 10 : maxY,
+          barTouchData: BarTouchData(
+            enabled: true,
+            touchTooltipData: BarTouchTooltipData(
+              getTooltipColor: (_) => AppColors.primary.withAlpha(200),
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                 return BarTooltipItem(
+                  '${rod.toY.round()}',
+                  GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
+                );
+              },
+            ),
+          ),
+          titlesData: FlTitlesData(
+            show: true,
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 36,
+                getTitlesWidget: (value, meta) {
+                  if (value % 1 != 0) {
+                    return SideTitleWidget(meta: meta, child: const SizedBox.shrink());
+                  }
+                  return SideTitleWidget(
+                    meta: meta,
+                    space: 8,
+                    child: Text(
+                      value.toInt().toString(),
+                      style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textTertiary),
+                    ),
+                  );
+                },
+              ),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 32,
+                getTitlesWidget: (value, meta) {
+                  if (value.toInt() >= 0 && value.toInt() < keys.length) {
+                    return SideTitleWidget(
+                      meta: meta,
+                      space: 8,
+                      child: Text(
+                        keys[value.toInt()],
+                        style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textTertiary),
+                      ),
+                    );
+                  }
+                  return SideTitleWidget(meta: meta, child: const SizedBox.shrink());
+                },
+              ),
+            ),
+          ),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            checkToShowHorizontalLine: (value) => value % 1 == 0,
+            getDrawingHorizontalLine: (value) => FlLine(
+              color: AppColors.cardBorder,
+              strokeWidth: 1,
+            ),
+          ),
+          borderData: FlBorderData(show: false),
+          barGroups: values.asMap().entries.map((entry) {
+            return BarChartGroupData(
+              x: entry.key,
+              barRods: [
+                BarChartRodData(
+                  toY: entry.value.toDouble(),
+                  color: AppColors.primary,
+                  width: 20,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.easeOut,
+      ),
+    );
+  }
+
+  Widget _buildUsersBarChart(AdminAnalyticsProvider analytics) {
+    if (analytics.monthlyUsers.isEmpty || analytics.monthlyUsers.values.every((v) => v == 0)) {
+       return _buildEmptyState('New Users Per Month');
+    }
+
+    final keys = analytics.monthlyUsers.keys.toList();
+    final values = analytics.monthlyUsers.values.toList();
+    final maxY = values.reduce((a, b) => a > b ? a : b).toDouble() * 1.2;
+
+    return _buildChartCard(
+      title: 'New Users Per Month',
+      child: BarChart(
+        BarChartData(
+          alignment: BarChartAlignment.spaceAround,
+          maxY: maxY == 0 ? 10 : maxY,
+          barTouchData: BarTouchData(
+            enabled: true,
+            touchTooltipData: BarTouchTooltipData(
+              getTooltipColor: (_) => AppColors.primary.withAlpha(200),
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                return BarTooltipItem(
+                  '${rod.toY.round()}',
+                  GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
+                );
+              },
+            ),
+          ),
+          titlesData: FlTitlesData(
+            show: true,
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 36,
+                getTitlesWidget: (value, meta) {
+                  if (value % 1 != 0) {
+                    return SideTitleWidget(meta: meta, child: const SizedBox.shrink());
+                  }
+                  return SideTitleWidget(
+                    meta: meta,
+                    space: 8,
+                    child: Text(
+                      value.toInt().toString(),
+                      style: GoogleFonts.poppins(fontSize: 11, color: AppColors.textTertiary),
+                    ),
+                  );
+                },
+              ),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 32,
+                getTitlesWidget: (value, meta) {
+                  if (value.toInt() >= 0 && value.toInt() < keys.length) {
+                    return SideTitleWidget(
+                      meta: meta,
+                      space: 8,
+                      child: Text(
+                        keys[value.toInt()],
+                        style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textTertiary),
+                      ),
+                    );
+                  }
+                  return SideTitleWidget(meta: meta, child: const SizedBox.shrink());
+                },
+              ),
+            ),
+          ),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            checkToShowHorizontalLine: (value) => value % 1 == 0,
+            getDrawingHorizontalLine: (value) => FlLine(
+              color: AppColors.cardBorder,
+              strokeWidth: 1,
+            ),
+          ),
+          borderData: FlBorderData(show: false),
+          barGroups: values.asMap().entries.map((entry) {
+            return BarChartGroupData(
+              x: entry.key,
+              barRods: [
+                BarChartRodData(
+                  toY: entry.value.toDouble(),
+                  color: AppColors.success,
+                  width: 20,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.easeOut,
+      ),
+    );
+  }
+
+  Widget _buildFinesBarChart(AdminAnalyticsProvider analytics) {
+    if (analytics.monthlyFines.isEmpty || analytics.monthlyFines.values.every((v) => v == 0)) {
+       return _buildEmptyState('Monthly Fine Collection');
+    }
+
+    final keys = analytics.monthlyFines.keys.toList();
+    final values = analytics.monthlyFines.values.toList();
+    final maxY = values.reduce((a, b) => a > b ? a : b) * 1.2;
+
+    return _buildChartCard(
+      title: 'Monthly Fine Collection',
+      child: BarChart(
+        BarChartData(
+          alignment: BarChartAlignment.spaceAround,
+          maxY: maxY == 0 ? 10 : maxY,
+          barTouchData: BarTouchData(
+            enabled: true,
+            touchTooltipData: BarTouchTooltipData(
+              getTooltipColor: (_) => AppColors.error.withAlpha(200),
+              getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                 return BarTooltipItem(
+                  '₹${rod.toY.toStringAsFixed(0)}',
+                  GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
+                );
+              },
+            ),
+          ),
+          titlesData: FlTitlesData(
+            show: true,
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 42,
+                getTitlesWidget: (value, meta) {
+                  return SideTitleWidget(
+                    meta: meta,
+                    space: 8,
+                    child: Text(
+                      '₹${value.toInt()}',
+                      style: GoogleFonts.poppins(fontSize: 10, color: AppColors.textTertiary),
+                    ),
+                  );
+                },
+              ),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 32,
+                getTitlesWidget: (value, meta) {
+                  if (value.toInt() >= 0 && value.toInt() < keys.length) {
+                    return SideTitleWidget(
+                      meta: meta,
+                      space: 8,
+                      child: Text(
+                        keys[value.toInt()],
+                        style: GoogleFonts.poppins(fontSize: 12, color: AppColors.textTertiary),
+                      ),
+                    );
+                  }
+                  return SideTitleWidget(meta: meta, child: const SizedBox.shrink());
+                },
+              ),
+            ),
+          ),
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            getDrawingHorizontalLine: (value) => FlLine(
+              color: AppColors.cardBorder,
+              strokeWidth: 1,
+            ),
+          ),
+          borderData: FlBorderData(show: false),
+          barGroups: values.asMap().entries.map((entry) {
+            return BarChartGroupData(
+              x: entry.key,
+              barRods: [
+                BarChartRodData(
+                  toY: entry.value,
+                  color: AppColors.error,
+                  width: 20,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+        duration: const Duration(milliseconds: 800),
+        curve: Curves.easeOut,
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(String title) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(5),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(title, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+          const SizedBox(height: 20),
+          Icon(Icons.bar_chart_rounded, size: 48, color: AppColors.textTertiary.withAlpha(100)),
+          const SizedBox(height: 12),
+          Text(
+            'No analytics data available yet',
+            style: GoogleFonts.poppins(color: AppColors.textTertiary, fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChartCard({required String title, required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.cardBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(5),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            height: 220,
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _showResetDialog(BuildContext context, AdminAnalyticsProvider analytics) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -358,19 +713,23 @@ class _StatCard extends StatelessWidget {
   final int value;
   final IconData icon;
   final List<Color> gradientColors;
+  final VoidCallback? onTap;
 
   const _StatCard({
     required this.title,
     required this.value,
     required this.icon,
     required this.gradientColors,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.cardBorder),
@@ -425,7 +784,8 @@ class _StatCard extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ), // This closes the Container
+    ); // This closes the GestureDetector
   }
 }
 

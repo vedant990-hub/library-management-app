@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 import '../models/book.dart';
 import '../models/borrowing.dart';
 import '../theme/app_theme.dart';
@@ -209,9 +211,9 @@ class _BookCardState extends State<BookCard> {
           margin: const EdgeInsets.only(bottom: 14),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.cardBorder),
+            border: Border.all(color: Theme.of(context).dividerColor),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withAlpha(6),
@@ -226,22 +228,29 @@ class _BookCardState extends State<BookCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Book cover
-                  Container(
-                    width: 68,
-                    height: 96,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: colors,
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: CachedNetworkImage(
+                      imageUrl: widget.book.coverUrl,
+                      width: 68,
+                      height: 96,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Shimmer.fromColors(
+                        baseColor: Colors.grey.shade200,
+                        highlightColor: Colors.grey.shade100,
+                        child: Container(color: Colors.white),
                       ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.auto_stories_rounded,
-                        size: 28,
-                        color: _getBookIconColor(),
+                      errorWidget: (context, url, error) => Container(
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9), // Neutral slate-50
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Icon(
+                          Icons.local_library_rounded, 
+                          color: AppColors.primary.withAlpha(180), 
+                          size: 32
+                        ),
                       ),
                     ),
                   ),
@@ -255,7 +264,7 @@ class _BookCardState extends State<BookCard> {
                           style: GoogleFonts.poppins(
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
-                            color: AppColors.textPrimary,
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
                             height: 1.3,
                           ),
                           maxLines: 2,
@@ -265,7 +274,7 @@ class _BookCardState extends State<BookCard> {
                         Text(
                           widget.book.author,
                           style: GoogleFonts.poppins(
-                            color: AppColors.textSecondary,
+                            color: Theme.of(context).textTheme.bodyMedium?.color?.withAlpha(180),
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -308,7 +317,7 @@ class _BookCardState extends State<BookCard> {
                                 style: GoogleFonts.poppins(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.textSecondary,
+                                  color: Theme.of(context).textTheme.bodySmall?.color,
                                 ),
                               ),
                             ],
@@ -355,7 +364,7 @@ class _BookCardState extends State<BookCard> {
               // Actions
               if (widget.onPrimaryAction != null || widget.onSecondaryAction != null) ...[
                 const SizedBox(height: 14),
-                Divider(height: 1, color: AppColors.cardBorder),
+                Divider(height: 1, color: Theme.of(context).dividerColor),
                 const SizedBox(height: 12),
                 Row(
                   children: [

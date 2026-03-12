@@ -7,6 +7,7 @@ import '../widgets/book_card.dart';
 import '../screens/book_detail_screen.dart';
 import '../theme/app_theme.dart';
 import '../utils/page_transitions.dart';
+import '../utils/image_utils.dart';
 
 class BookListScreen extends StatefulWidget {
   const BookListScreen({super.key});
@@ -17,7 +18,8 @@ class BookListScreen extends StatefulWidget {
 
 class _BookListScreenState extends State<BookListScreen> {
   String _searchQuery = '';
-  String? _selectedGenre;
+  double _minRating = 0;
+  final Set<String> _selectedGenres = {};
 
   @override
   void initState() {
@@ -31,24 +33,127 @@ class _BookListScreenState extends State<BookListScreen> {
   List<String> _extractGenres(List<dynamic> books) {
     final genreSet = <String>{};
     for (final book in books) {
-      genreSet.addAll(book.genres);
+      genreSet.addAll((book.genres as List<dynamic>).map((e) => e.toString()));
     }
     final sorted = genreSet.toList()..sort();
     return sorted;
+  }
+
+  void _showFilterSheet(List<String> allGenres) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Filters', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold)),
+                  TextButton(
+                    onPressed: () {
+                      setSheetState(() {
+                        _selectedGenres.clear();
+                        _minRating = 0;
+                      });
+                      setState(() {});
+                    },
+                    child: const Text('Reset'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text('Genres', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: allGenres.map((genre) {
+                  final isSel = _selectedGenres.contains(genre);
+                  return FilterChip(
+                    label: Text(genre),
+                    selected: isSel,
+                    onSelected: (selected) {
+                      setSheetState(() {
+                        if (selected) _selectedGenres.add(genre);
+                        else _selectedGenres.remove(genre);
+                      });
+                      setState(() {});
+                    },
+                    selectedColor: AppColors.primary.withAlpha(50),
+                    checkmarkColor: AppColors.primary,
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 24),
+              Text('Minimum Rating', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+              Row(
+                children: [
+                  Expanded(
+                    child: Slider(
+                      value: _minRating,
+                      min: 0,
+                      max: 5,
+                      divisions: 5,
+                      label: _minRating.toStringAsFixed(1),
+                      onChanged: (v) {
+                        setSheetState(() => _minRating = v);
+                        setState(() {});
+                      },
+                    ),
+                  ),
+                  Text(_minRating.toStringAsFixed(1), style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                ],
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Apply Filters'),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final libraryProvider = Provider.of<LibraryProvider>(context);
     final allBooks = libraryProvider.allBooks;
+
+    // Trigger pre-caching 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (allBooks.isNotEmpty) {
+        ImageUtils.preCacheImages(context, allBooks.map((b) => b.coverUrl).toList());
+      }
+    });
+
     final allGenres = _extractGenres(allBooks);
 
-    // Combined filter: genre first, then title search
     var filteredBooks = allBooks;
 
-    if (_selectedGenre != null) {
+    if (_selectedGenres.isNotEmpty) {
       filteredBooks = filteredBooks
-          .where((b) => b.genres.contains(_selectedGenre))
+          .where((b) => b.genres.any((g) => _selectedGenres.contains(g)))
+          .toList();
+    }
+
+    if (_minRating > 0) {
+      filteredBooks = filteredBooks
+          .where((b) => b.avgRating >= _minRating)
           .toList();
     }
 
@@ -62,24 +167,24 @@ class _BookListScreenState extends State<BookListScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(
           'Discover Books',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w700, fontSize: 22),
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 24),
         ),
         actions: [
-          PopupMenuButton<String?>(
+          IconButton(
             icon: Stack(
               children: [
-                const Icon(Icons.filter_list_rounded),
-                if (_selectedGenre != null)
+                const Icon(Icons.tune_rounded),
+                if (_selectedGenres.isNotEmpty || _minRating > 0)
                   Positioned(
                     right: 0,
                     top: 0,
                     child: Container(
-                      width: 8,
-                      height: 8,
+                      width: 10,
+                      height: 10,
                       decoration: const BoxDecoration(
                         color: AppColors.primary,
                         shape: BoxShape.circle,
@@ -88,62 +193,9 @@ class _BookListScreenState extends State<BookListScreen> {
                   ),
               ],
             ),
-            tooltip: 'Filter by genre',
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14)),
-            onSelected: (genre) => setState(() => _selectedGenre = genre),
-            itemBuilder: (context) {
-              return [
-                PopupMenuItem<String?>(
-                  value: null,
-                  child: Row(
-                    children: [
-                      Icon(
-                        _selectedGenre == null
-                            ? Icons.check_circle_rounded
-                            : Icons.circle_outlined,
-                        size: 18,
-                        color: _selectedGenre == null
-                            ? AppColors.primary
-                            : AppColors.textTertiary,
-                      ),
-                      const SizedBox(width: 10),
-                      Text('All Genres',
-                          style: GoogleFonts.poppins(
-                            fontWeight: _selectedGenre == null
-                                ? FontWeight.w600
-                                : FontWeight.w400,
-                          )),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(),
-                ...allGenres.map((genre) => PopupMenuItem<String?>(
-                      value: genre,
-                      child: Row(
-                        children: [
-                          Icon(
-                            _selectedGenre == genre
-                                ? Icons.check_circle_rounded
-                                : Icons.circle_outlined,
-                            size: 18,
-                            color: _selectedGenre == genre
-                                ? AppColors.primary
-                                : AppColors.textTertiary,
-                          ),
-                          const SizedBox(width: 10),
-                          Text(genre,
-                              style: GoogleFonts.poppins(
-                                fontWeight: _selectedGenre == genre
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
-                              )),
-                        ],
-                      ),
-                    )),
-              ];
-            },
+            onPressed: () => _showFilterSheet(allGenres),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
@@ -153,7 +205,7 @@ class _BookListScreenState extends State<BookListScreen> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -208,17 +260,18 @@ class _BookListScreenState extends State<BookListScreen> {
                     if (index == 0) {
                       return _GenreChip(
                         label: 'All',
-                        isSelected: _selectedGenre == null,
-                        onTap: () => setState(() => _selectedGenre = null),
+                        isSelected: _selectedGenres.isEmpty,
+                        onTap: () => setState(() => _selectedGenres.clear()),
                       );
                     }
                     final genre = allGenres[index - 1];
+                    final isSelected = _selectedGenres.contains(genre);
                     return _GenreChip(
                       label: genre,
-                      isSelected: _selectedGenre == genre,
+                      isSelected: isSelected,
                       onTap: () => setState(() {
-                        _selectedGenre =
-                            _selectedGenre == genre ? null : genre;
+                        if (isSelected) _selectedGenres.remove(genre);
+                        else _selectedGenres.add(genre);
                       }),
                     );
                   },
@@ -241,7 +294,7 @@ class _BookListScreenState extends State<BookListScreen> {
                     color: AppColors.textTertiary,
                   ),
                 ),
-                if (_selectedGenre != null) ...[
+                if (_selectedGenres.isNotEmpty) ...[
                   const SizedBox(width: 6),
                   Container(
                     padding:
@@ -251,7 +304,7 @@ class _BookListScreenState extends State<BookListScreen> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      _selectedGenre!,
+                      _selectedGenres.length == 1 ? _selectedGenres.first : '${_selectedGenres.length} genres',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
@@ -279,7 +332,7 @@ class _BookListScreenState extends State<BookListScreen> {
                             color: AppColors.primary,
                             child: ListView.builder(
                               key: ValueKey(
-                                  '${_selectedGenre}_$_searchQuery'),
+                                  '${_selectedGenres.join(",")}_${_searchQuery}_$_minRating'),
                               padding:
                                   const EdgeInsets.fromLTRB(20, 4, 20, 100),
                               itemCount: filteredBooks.length,
@@ -318,8 +371,8 @@ class _BookListScreenState extends State<BookListScreen> {
           Text(
             _searchQuery.isNotEmpty
                 ? 'No results for "$_searchQuery"'
-                : _selectedGenre != null
-                    ? 'No books in "$_selectedGenre"'
+                : _selectedGenres.isNotEmpty
+                    ? 'No books match selected filters'
                     : 'No Books Found',
             style: GoogleFonts.poppins(
               fontSize: 18,
@@ -329,7 +382,7 @@ class _BookListScreenState extends State<BookListScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Try a different search or genre',
+            'Try a different search or filter',
             style: GoogleFonts.poppins(
               color: AppColors.textTertiary,
             ),
@@ -340,9 +393,12 @@ class _BookListScreenState extends State<BookListScreen> {
   }
 
   Widget _buildShimmerList() {
+    final theme = Theme.of(context);
+    final isDark = false;
+    
     return Shimmer.fromColors(
-      baseColor: Colors.grey.shade200,
-      highlightColor: Colors.grey.shade100,
+      baseColor: isDark ? Colors.grey.shade900 : Colors.grey.shade200,
+      highlightColor: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
         itemCount: 6,
@@ -430,12 +486,12 @@ class _GenreChip extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : Colors.white,
+            color: isSelected ? AppColors.primary : Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: isSelected
                   ? AppColors.primary
-                  : AppColors.cardBorder,
+                  : Theme.of(context).dividerColor,
             ),
             boxShadow: isSelected
                 ? [

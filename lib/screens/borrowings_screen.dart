@@ -13,10 +13,11 @@ class BorrowingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final reservationProvider = Provider.of<ReservationProvider>(context);
     final libraryProvider = Provider.of<LibraryProvider>(context, listen: false);
+    final theme = Theme.of(context);
 
     if (reservationProvider.isLoading) {
       return Scaffold(
-        backgroundColor: AppColors.surface,
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
           title: Text('My Borrowings', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
         ),
@@ -29,7 +30,7 @@ class BorrowingsScreen extends StatelessWidget {
         .toList();
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('My Borrowings', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
       ),
@@ -41,13 +42,13 @@ class BorrowingsScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: AppColors.warningLight,
+                      color: theme.brightness == Brightness.light ? AppColors.warningLight : Colors.orange.withAlpha(30),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.menu_book_rounded,
                       size: 56,
-                      color: AppColors.warning,
+                      color: theme.brightness == Brightness.light ? AppColors.warning : Colors.orangeAccent,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -56,7 +57,7 @@ class BorrowingsScreen extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: theme.textTheme.titleLarge?.color,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -64,7 +65,7 @@ class BorrowingsScreen extends StatelessWidget {
                     'Reserve a book and confirm borrowing',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: AppColors.textTertiary,
+                      color: theme.textTheme.bodySmall?.color,
                     ),
                   ),
                 ],
@@ -81,7 +82,7 @@ class BorrowingsScreen extends StatelessWidget {
                 final book = matchedBook.isNotEmpty
                     ? matchedBook.first
                     : null;
-
+ 
                 if (book == null) return const SizedBox.shrink();
 
                 final isOverdue = borrowing.status == 'overdue' ||
@@ -102,10 +103,12 @@ class BorrowingsScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 10),
                         decoration: BoxDecoration(
-                          color: AppColors.errorLight,
+                          color: theme.brightness == Brightness.light ? AppColors.errorLight : Colors.red.withAlpha(30),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                              color: AppColors.error.withAlpha(40)),
+                               color: theme.brightness == Brightness.light 
+                               ? AppColors.error.withAlpha(40)
+                               : Colors.redAccent.withAlpha(60)),
                         ),
                         child: Row(
                           children: [

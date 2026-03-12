@@ -16,7 +16,7 @@ class MyReservationsScreen extends StatelessWidget {
 
     if (reservationProvider.isLoading) {
       return Scaffold(
-        backgroundColor: AppColors.surface,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: Text('My Reservations', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
         ),
@@ -27,7 +27,7 @@ class MyReservationsScreen extends StatelessWidget {
     final reservations = reservationProvider.activeReservations;
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text('My Reservations', style: GoogleFonts.poppins(fontWeight: FontWeight.w700)),
       ),
@@ -39,7 +39,7 @@ class MyReservationsScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
+                      color: Theme.of(context).brightness == Brightness.light ? AppColors.primaryLight : AppColors.primary.withAlpha(30),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -54,7 +54,7 @@ class MyReservationsScreen extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).textTheme.titleLarge?.color,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -62,7 +62,7 @@ class MyReservationsScreen extends StatelessWidget {
                     'Browse books and make a reservation',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: AppColors.textTertiary,
+                      color: Theme.of(context).textTheme.bodySmall?.color,
                     ),
                   ),
                 ],
@@ -135,14 +135,14 @@ class MyReservationsScreen extends StatelessWidget {
                               content: Text(
                                   'Are you sure? Your ₹${borrowing.depositAmount.toStringAsFixed(0)} deposit will be refunded.',
                                   style: GoogleFonts.poppins(
-                                      color: AppColors.textSecondary)),
+                                      color: Theme.of(context).textTheme.bodyMedium?.color)),
                               actions: [
                                 TextButton(
                                   onPressed: () =>
                                       Navigator.pop(context, false),
                                   child: Text('Keep',
                                       style: TextStyle(
-                                          color: AppColors.textSecondary)),
+                                          color: Theme.of(context).textTheme.bodySmall?.color)),
                                 ),
                                 ElevatedButton(
                                   onPressed: () =>
